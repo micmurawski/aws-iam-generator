@@ -12,7 +12,7 @@ def read(*parts):
 
 setup(
     name='aws-iam-generator',
-    version='0.9.0',
+    version='0.9.1',
     packages=find_packages(exclude=(
         'tests'
     )),
