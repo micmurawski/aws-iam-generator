@@ -5,7 +5,11 @@ During my work as a cloud engineer, I often needed to deploy some IAM resources 
 together with some parameters. I had to do it so often I decided to wrap it all in a feasible and easy to use the library.
 
 Generates AWS IAM Managed Policies and Roles for multiple accounts using the easy templating language. Example cross-account template and deployment execution shown below.
+## Installation
+ 1. Run ``pip install pynamodb-utils`` or execute ``python setup.py install`` in the source directory
+ 2. Add ``aws_iam_generator`` to your ``INSTALLED_APPS``
 
+## Example
 ```python
 from iam_aws_generator import AWSIAMGenerator
 
@@ -168,4 +172,6 @@ generator.set_parameters(
 generator.deploy()
 
 ```
+## Links
 
+* https://pypi.org/project/aws-iam-generator/
