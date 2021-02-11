@@ -1,0 +1,171 @@
+{
+  "Accounts": {
+    "PipelineAccount": {
+      "Description": "Account where deployment pipeline will be created",
+      "AccessRoleName": "DefaultRole"
+    },
+    "AppsAccount": {
+      "Description": "Account where workloads will be deployed"
+    },
+    "WorkloadUserAccount": {
+      "Description": "Account that will be used by the user for everyday work"
+    },
+    "MaintenanceAccount": {
+      "Id": "0180802564903",
+      "Description": "Remote account owned by Workload Provider that will be performing maintnance tasks"
+    }
+  },
+  "Policies": {
+    "DeployCFStackPolicy": {
+      "Description": "Policy that enables to deploy a stack",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "sts:AssumeRole"
+            ],
+            "Resource": [
+              "*"
+            ],
+            "Effect": "Allow"
+          },
+          {
+            "Action": [
+              "kms:*",
+              "cloudformation:*",
+              "codebuild:*",
+              "codepipeline:*",
+              "iam:PassRole",
+              "logs:*"
+            ],
+            "Resource": [
+              "arn:aws:cloudformation:${AWS::Region}:{{Accounts.AppsAccount.Id}}:stack/mvw-deploy",
+              "arn:aws:cloudformation:${AWS::Region}:{{Accounts.AppsAccount.Id}}:stack/mvw-deploy/*",
+              "arn:aws:codebuild:${AWS::Region}:{{Accounts.AppsAccount.Id}}:project/mvw-Deploy",
+              "arn:aws:logs:${AWS::Region}:{{Accounts.AppsAccount.Id}}:log-group:/aws/codebuild/mvw-Deploy:log-stream:*"
+            ],
+            "Effect": "Allow"
+          },
+          {
+            "Action": [
+              "s3:*"
+            ],
+            "Resource": [
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-mvw-artifacts",
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-mvw-artifacts/*",
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-mvw-terraform",
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-mvw-terraform/*"
+            ],
+            "Effect": "Allow"
+          },
+          {
+            "Action": [
+              "s3:*"
+            ],
+            "Resource": [
+              "arn:aws:s3:::aws-us-east-1-0180802564903-mvw-release-bucket",
+              "arn:aws:s3:::aws-us-east-1-0180802564903-mvw-release-bucket/mvw.zip"
+            ],
+            "Effect": "Allow"
+          }
+        ]
+      }
+    },
+    "DeployAppPolicy": {
+      "Description": "Policy that enables to deploy pipeline",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "s3:*",
+              "iam:*",
+              "lambda:*",
+              "logs:*",
+              "apigateway:*"
+            ],
+            "Resource": [
+              "*"
+            ],
+            "Effect": "Allow"
+          }
+        ]
+      }
+    },
+    "WorkloadUserPolicy": {
+      "Description": "Policy that enables a user to perform actions on deployed resources",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "s3:GetObject",
+              "s3:ListBucket",
+              "s3:PutObject"
+            ],
+            "Resource": [
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket"
+            ],
+            "Effect": "Allow"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "execute-api:Invoke"
+            ],
+            "Resource": [
+              "arn:aws:execute-api:${AWS::Region}:*:*/api/POST/helloWorld"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Roles": {
+    "DeployCFStackRole": {
+      "Description": "Description #1",
+      "Trusts": [
+        "Accounts.MaintenanceAccount.Id",
+        "codebuild.amazonaws.com",
+        "codepipeline.amazonaws.com"
+      ],
+      "ManagedPolicies": [
+        "Policies.DeployCFStackPolicy"
+      ],
+      "InAccounts": [
+        "Accounts.PipelineAccount.Id"
+      ]
+    },
+    "WorkloadDeployRole": {
+      "Description": "Description #2",
+      "Trusts": [
+        "Accounts.PipelineAccount.Id",
+        "codebuild.amazonaws.com",
+        "codepipeline.amazonaws.com"
+      ],
+      "ManagedPolicies": [
+        "Policies.DeployAppPolicy"
+      ],
+      "InAccounts": [
+        "Accounts.AppsAccount.Id"
+      ]
+    },
+    "WorkloadUserRole": {
+      "Description": "Description #3",
+      "Trusts": [
+        "Accounts.AppsAccount.Id"
+      ],
+      "ManagedPolicies": [
+        "Policies.WorkloadUserPolicy"
+      ],
+      "InAccounts": [
+        "Accounts.WorkloadUserAccount.Id"
+      ]
+    }
+  },
+  "ServiceLinkedRoles": {
+  },
+  "Regions": {
+  }
+}

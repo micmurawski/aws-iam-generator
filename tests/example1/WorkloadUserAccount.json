@@ -1,0 +1,82 @@
+{
+    "Outputs": {
+        "WorkloadUserRoleArn": {
+            "Description": "Description #3",
+            "Value": {
+                "Fn::GetAtt": [
+                    "WorkloadUserRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-WorkloadUserRoleArn"
+                }
+            }
+        }
+    },
+    "Resources": {
+        "WorkloadUserPolicy": {
+            "Properties": {
+                "Description": "Policy that enables a user to perform actions on deployed resources",
+                "Groups": [],
+                "ManagedPolicyName": "WorkloadUserPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:GetObject",
+                                "s3:ListBucket",
+                                "s3:PutObject"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-012345678901-2-basic-bucket"
+                                }
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "execute-api:Invoke"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:*:*/api/POST/helloWorld"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "WorkloadUserRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": [
+                                    "arn:aws:iam::012345678901:root"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Ref": "WorkloadUserPolicy"
+                    }
+                ],
+                "RoleName": "WorkloadUserRole"
+            },
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

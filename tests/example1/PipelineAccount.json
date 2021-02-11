@@ -1,0 +1,126 @@
+{
+    "Outputs": {
+        "DeployCFStackRoleArn": {
+            "Description": "Description #1",
+            "Value": {
+                "Fn::GetAtt": [
+                    "DeployCFStackRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-DeployCFStackRoleArn"
+                }
+            }
+        }
+    },
+    "Resources": {
+        "DeployCFStackPolicy": {
+            "Properties": {
+                "Description": "Policy that enables to deploy a stack",
+                "Groups": [],
+                "ManagedPolicyName": "DeployCFStackPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "kms:*",
+                                "cloudformation:*",
+                                "codebuild:*",
+                                "codepipeline:*",
+                                "iam:PassRole",
+                                "logs:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:cloudformation:${AWS::Region}:012345678901:stack/mvw-deploy"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:cloudformation:${AWS::Region}:012345678901:stack/mvw-deploy/*"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:codebuild:${AWS::Region}:012345678901:project/mvw-Deploy"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:logs:${AWS::Region}:012345678901:log-group:/aws/codebuild/mvw-Deploy:log-stream:*"
+                                }
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "s3:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-012345678901-mvw-artifacts"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-012345678901-mvw-artifacts/*"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-012345678901-mvw-terraform"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-012345678901-mvw-terraform/*"
+                                }
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "s3:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "arn:aws:s3:::aws-us-east-1-0180802564903-mvw-release-bucket",
+                                "arn:aws:s3:::aws-us-east-1-0180802564903-mvw-release-bucket/mvw.zip"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "DeployCFStackRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "codebuild.amazonaws.com",
+                                    "codepipeline.amazonaws.com"
+                                ],
+                                "AWS": [
+                                    "arn:aws:iam::0180802564903:root"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Ref": "DeployCFStackPolicy"
+                    }
+                ],
+                "RoleName": "DeployCFStackRole"
+            },
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

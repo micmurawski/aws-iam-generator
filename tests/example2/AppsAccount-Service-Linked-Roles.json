@@ -1,0 +1,24 @@
+{
+    "Outputs": {
+        "AWSServiceRoleForAPIGatewayRef": {
+            "Description": "Description #4",
+            "Value": {
+                "Ref": "AWSServiceRoleForAPIGateway"
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-AWSServiceRoleForAPIGatewayRef"
+                }
+            }
+        }
+    },
+    "Resources": {
+        "AWSServiceRoleForAPIGateway": {
+            "Properties": {
+                "Description": "Description #4",
+                "AWSServiceName": "apigateway.amazonaws.com"
+            },
+            "Type": "AWS::IAM::ServiceLinkedRole"
+        }
+    }
+}

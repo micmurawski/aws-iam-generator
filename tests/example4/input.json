@@ -1,0 +1,57 @@
+{
+  "Accounts": {
+    "SharedServicesAccount": {
+      "Description": "Shared services account with DNS/Route53 instance in it"
+    }
+  },
+  "Variables": {
+    "HostedZoneID": {
+      "Type": "string",
+      "Description": "Hosted Zone ID of workload domain"
+    },
+    "TrustAccountsIds": {
+      "Type": "list(string)",
+      "Description": "Operations Account of Workload Provider and customer."
+    },
+    "TrustRolesArns": {
+      "Type": "list(string)",
+      "Description": "Operations Account of Workload Provider and customer."
+    }
+  },
+  "Policies": {
+    "Route53Policy": {
+      "Description": "Policy that enables a user to perform actions on Route53",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "route53:*"
+            ],
+            "Resource": [
+              "arn:aws:route53:::hostedzone/{{Variables.HostedZoneID.Value}}",
+              "arn:aws:route53:::healthcheck/{{Variables.HostedZoneID.Value}}"
+            ],
+            "Effect": "Allow"
+          }
+        ]
+      }
+    }
+  },
+  "Roles": {
+    "DNSSharedServicesAccountRole": {
+      "Trusts": [
+        "{{Variables.TrustAccountsIds.Value}}",
+        "{{Variables.TrustRolesArns.Value}}"
+      ],
+      "ManagedPolicies": [
+        "Policies.Route53Policy"
+      ],
+      "InAccounts": [
+        "Accounts.SharedServicesAccount.Id"
+      ]
+    }
+  },
+  "ServiceLinkedRoles": {},
+  "Regions": {}
+}

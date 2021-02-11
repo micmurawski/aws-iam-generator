@@ -1,0 +1,265 @@
+{
+    "Outputs": {
+        "ReadOnlyUserRoleArn": {
+            "Description": "Description #1",
+            "Value": {
+                "Fn::GetAtt": [
+                    "ReadOnlyUserRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-ReadOnlyUserRoleArn"
+                }
+            }
+        },
+        "ReadWriteUserRoleArn": {
+            "Description": "Description #2",
+            "Value": {
+                "Fn::GetAtt": [
+                    "ReadWriteUserRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-ReadWriteUserRoleArn"
+                }
+            }
+        },
+        "AdminUserRoleArn": {
+            "Description": "Description #3",
+            "Value": {
+                "Fn::GetAtt": [
+                    "AdminUserRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-AdminUserRoleArn"
+                }
+            }
+        }
+    },
+    "Resources": {
+        "ReadS3Policy": {
+            "Properties": {
+                "Description": "Policy that enables a user to perform actions on deployed resources",
+                "Groups": [],
+                "ManagedPolicyName": "ReadS3Policy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:GetObject",
+                                "s3:ListBucket"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-123456789012-2-basic-bucket"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-123456789012-2-basic-bucket/*"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "ExecuteApiPolicy": {
+            "Properties": {
+                "Description": "Policy that enables a user to perform actions on deployed resources",
+                "Groups": [],
+                "ManagedPolicyName": "ExecuteApiPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "execute-api:Invoke"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:*:*/api/POST/helloWorld"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "ReadOnlyUserRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {}
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Ref": "ReadS3Policy"
+                    },
+                    {
+                        "Ref": "ExecuteApiPolicy"
+                    }
+                ],
+                "RoleName": "ReadOnlyUserRole"
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "WriteS3Policy": {
+            "Properties": {
+                "Description": "Policy that enables a user to perform actions on deployed resources",
+                "Groups": [],
+                "ManagedPolicyName": "WriteS3Policy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:ListBucket",
+                                "s3:PutObject"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-123456789012-2-basic-bucket"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-123456789012-2-basic-bucket/*"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "ReadWriteUserRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {}
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Ref": "ReadS3Policy"
+                    },
+                    {
+                        "Ref": "WriteS3Policy"
+                    },
+                    {
+                        "Ref": "ExecuteApiPolicy"
+                    }
+                ],
+                "RoleName": "ReadWriteUserRole"
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "FullAccessS3Policy": {
+            "Properties": {
+                "Description": "Policy that enables a user to perform actions on deployed resources",
+                "Groups": [],
+                "ManagedPolicyName": "FullAccessS3Policy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-123456789012-2-basic-bucket"
+                                },
+                                {
+                                    "Fn::Sub": "arn:aws:s3:::aws-${AWS::Region}-123456789012-2-basic-bucket/*"
+                                }
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "apigateway:*",
+                                "cognito:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "AdminCognitoPolicy": {
+            "Properties": {
+                "Description": "Policy that enables a user to perform actions on deployed resources",
+                "Groups": [],
+                "ManagedPolicyName": "AdminCognitoPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "cognito:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "AdminUserRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {}
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Ref": "FullAccessS3Policy"
+                    },
+                    {
+                        "Ref": "ExecuteApiPolicy"
+                    },
+                    {
+                        "Ref": "AdminCognitoPolicy"
+                    }
+                ],
+                "RoleName": "AdminUserRole"
+            },
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

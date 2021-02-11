@@ -1,0 +1,75 @@
+{
+    "Outputs": {
+        "WorkloadDeployRoleArn": {
+            "Description": "Description #2",
+            "Value": {
+                "Fn::GetAtt": [
+                    "WorkloadDeployRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-WorkloadDeployRoleArn"
+                }
+            }
+        }
+    },
+    "Resources": {
+        "DeployAppPolicy": {
+            "Properties": {
+                "Description": "Policy that enables to deploy pipeline",
+                "Groups": [],
+                "ManagedPolicyName": "DeployAppPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:*",
+                                "iam:*",
+                                "lambda:*",
+                                "logs:*",
+                                "apigateway:*"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::IAM::ManagedPolicy"
+        },
+        "WorkloadDeployRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "codebuild.amazonaws.com",
+                                    "codepipeline.amazonaws.com"
+                                ],
+                                "AWS": [
+                                    "arn:aws:iam::045678901234:root"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Ref": "DeployAppPolicy"
+                    }
+                ],
+                "RoleName": "WorkloadDeployRole"
+            },
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

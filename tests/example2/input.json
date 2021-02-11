@@ -1,0 +1,166 @@
+{
+  "Accounts": {
+    "PipelineAccount": {
+      "Description": "Account where deployment pipeline will be created"
+    },
+    "AppsAccount": {
+      "Description": "Account where workloads will be deployed"
+    },
+    "WorkloadUserAccount": {
+      "Description": "Account that will be used by the user for everyday work"
+    },
+    "MaintenanceAccount": {
+      "Id": "180802564903",
+      "Description": "Remote account owned by Workload Provider that will be performing maintnance tasks"
+    }
+  },
+  "Policies": {
+    "ReadS3Policy": {
+      "Description": "Policy that enables a user to perform actions on deployed resources",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "s3:GetObject",
+              "s3:ListBucket"
+            ],
+            "Resource": [
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket",
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket/*"
+            ],
+            "Effect": "Allow"
+          }
+        ]
+      }
+    },
+    "WriteS3Policy": {
+      "Description": "Policy that enables a user to perform actions on deployed resources",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "s3:ListBucket",
+              "s3:PutObject"
+            ],
+            "Resource": [
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket",
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket/*"
+            ],
+            "Effect": "Allow"
+          }
+        ]
+      }
+    },
+    "FullAccessS3Policy": {
+      "Description": "Policy that enables a user to perform actions on deployed resources",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "s3:*"
+            ],
+            "Resource": [
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket",
+              "arn:aws:s3:::aws-${AWS::Region}-{{Accounts.AppsAccount.Id}}-2-basic-bucket/*"
+            ],
+            "Effect": "Allow"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "apigateway:*",
+              "cognito:*"
+            ],
+            "Resource": [
+              "*"
+            ]
+          }
+        ]
+      }
+    },
+    "AdminCognitoPolicy": {
+      "Description": "Policy that enables a user to perform actions on deployed resources",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "cognito:*"
+            ],
+            "Resource": [
+              "*"
+            ]
+          }
+        ]
+      }
+    },
+    "ExecuteApiPolicy": {
+      "Description": "Policy that enables a user to perform actions on deployed resources",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "execute-api:Invoke"
+            ],
+            "Resource": [
+              "arn:aws:execute-api:${AWS::Region}:*:*/api/POST/helloWorld"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Roles": {
+    "ReadOnlyUserRole": {
+      "Description": "Description #1",
+      "Trusts": [],
+      "ManagedPolicies": [
+        "Policies.ReadS3Policy",
+        "Policies.ExecuteApiPolicy"
+      ],
+      "InAccounts": [
+        "Accounts.WorkloadUserAccount.Id"
+      ]
+    },
+    "ReadWriteUserRole": {
+      "Description": "Description #2",
+      "Trusts": [],
+      "ManagedPolicies": [
+        "Policies.ReadS3Policy",
+        "Policies.WriteS3Policy",
+        "Policies.ExecuteApiPolicy"
+      ],
+      "InAccounts": [
+        "Accounts.WorkloadUserAccount.Id"
+      ]
+    },
+    "AdminUserRole": {
+      "Description": "Description #3",
+      "Trusts": [],
+      "ManagedPolicies": [
+        "Policies.FullAccessS3Policy",
+        "Policies.ExecuteApiPolicy",
+        "Policies.AdminCognitoPolicy"
+      ],
+      "InAccounts": [
+        "Accounts.WorkloadUserAccount.Id"
+      ]
+    }
+  },
+  "ServiceLinkedRoles": {
+    "AWSServiceRoleForAPIGateway": {
+      "Description": "Description #4",
+      "ServiceName": "apigateway.amazonaws.com",
+      "InAccounts": [
+        "Accounts.AppsAccount.Id"
+      ]
+    }
+  },
+  "Regions": {}
+}

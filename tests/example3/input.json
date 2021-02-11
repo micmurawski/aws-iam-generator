@@ -1,0 +1,63 @@
+{
+  "Accounts": {
+    "SharedServicesAccount": {
+      "Description": "Shared services account with DNS/Route53 instance in it"
+    }
+  },
+  "Variables": {
+    "HostedZoneID": {
+      "Type": "string",
+      "Description": "Hosted Zone ID of workload domain"
+    },
+    "WorkloadProviderAccount": {
+      "Type": "list(string)",
+      "Description": "Operations Account of Workload Provider"
+    }
+  },
+  "Policies": {
+    "Route53Policy": {
+      "Description": "Policy that enables a user to perform actions on Route53",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": [
+              "route53:*"
+            ],
+            "Resource": [
+              "arn:aws:route53:::hostedzone/{{Variables.HostedZoneID.Value}}",
+              "arn:aws:route53:::healthcheck/{{Variables.HostedZoneID.Value}}"
+            ],
+            "Effect": "Allow"
+          },
+          {
+            "Action": [
+              "route53:Delete*"
+            ],
+            "Resource": [
+              "arn:aws:route53:::hostedzone/{{Variables.HostedZoneID.Value}}",
+              "arn:aws:route53:::healthcheck/{{Variables.HostedZoneID.Value}}"
+            ],
+            "Effect": "Deny"
+          }
+        ]
+      }
+    }
+  },
+  "Roles": {
+    "DNSSharedServicesAccountRole": {
+      "Description": "Role that provision to perform actions on Route53",
+      "Trusts": [
+        "{{Variables.WorkloadProviderAccount.Value}}"
+      ],
+      "ManagedPolicies": [
+        "Policies.Route53Policy"
+      ],
+      "InAccounts": [
+        "Accounts.SharedServicesAccount.Id"
+      ]
+    }
+  },
+  "ServiceLinkedRoles": {},
+  "Regions": {}
+}
