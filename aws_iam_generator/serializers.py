@@ -83,7 +83,6 @@ class AWSIAMRolesSpecification:
     Regions: typing.Dict[str, Region] = field(default_factory=dict)
     ServiceLinkedRoles: typing.Dict[str, ServiceLinkedRole] = field(default_factory=dict)
     Reference: typing.AnyStr = field(default=uuid4().hex)
-    UniqueID: typing.AnyStr = field(default=None)
 
     @property
     def build_version(self):
@@ -100,17 +99,33 @@ class AWSIAMRolesSpecification:
                         sub = sub.replace("{{" + var + "}}", str(_id))
                     statement.Resource[i] = Sub(sub) if re.compile(SUB_PATTERN).findall(statement.Resource[i]) else sub
 
-        for key, role in self.Roles.items():
+        for role in self.Roles.values():
+            role._InAccounts = [self.get_variable(i) for i in role.InAccounts]
+
+        for role in self.Roles.values():
+            parsed_trusts = []
+
             for i in range(len(role.Trusts)):
-                if 'Accounts' in role.Trusts[i]:
-                    role.Trusts[i] = self.get_variable(role.Trusts[i])
+                if 'Accounts.' in role.Trusts[i]:
+                    parsed_trusts.append(self.get_variable(role.Trusts[i]))
+                elif 'Roles.' in role.Trusts[i]:
+                    parsed_trusts += self.get_variable(role.Trusts[i])
+                elif 'Variables.' in role.Trusts[i]:
+                    value = self.get_variable(role.Trusts[i])
+                    if type(value) == list:
+                        parsed_trusts += value
+                    else:
+                        parsed_trusts.append(value)
                 elif re.compile(VAR_PATTERN).findall(role.Trusts[i]):
                     _id = self.get_variable(role.Trusts[i])
-                    role.Trusts.pop(i)
                     if type(_id) == list:
-                        role.Trusts += _id
+                        parsed_trusts += _id
                     else:
-                        role.Trusts.append(_id)
+                        parsed_trusts.append(_id)
+                else:
+                    parsed_trusts.append(role.Trusts[i])
+
+            role.Trusts = parsed_trusts
 
             for i in range(len(role.ManagedPolicies)):
                 if '.' in role.ManagedPolicies[i]:
@@ -254,14 +269,13 @@ class AWSIAMRolesSpecification:
                                 managed_policy_name,
                                 Description=policy.Description,
                                 Groups=[],
-                                ManagedPolicyName=f'{managed_policy_name}-{self.UniqueID}'[
-                                                  :63] if self.UniqueID else managed_policy_name,
+                                ManagedPolicyName=managed_policy_name,
                                 PolicyDocument=policy.PolicyDocument.asdict()
                             ))
 
             for i in role.InAccounts:
                 account_name = i.split('.')[1]
-                name = f'{role_name}-{self.UniqueID}'[:63] if self.UniqueID else role_name
+                name = role_name
                 templates[account_name].add_resource(AWSRole(
                     role_name,
                     AssumeRolePolicyDocument=assume_role_policy_document,
@@ -340,6 +354,11 @@ class AWSIAMRolesSpecificationSerializer(AWSIAMRolesSpecificationValidator):
     @pre_load
     def pre_load_validate(self, data, *args, **kwargs):
         validate_accounts(data)
+
+        for k, v in data['Roles'].items():
+            if 'Name' not in v:
+                v['Name'] = k
+
         return data
 
     @post_load

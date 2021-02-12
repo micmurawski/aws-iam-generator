@@ -38,7 +38,6 @@ def serialized_example_3_roles_specification(example_3_roles_specification):
 @pytest.fixture(scope='session')
 def templates(serialized_example_3_roles_specification):
     serialized_example_3_roles_specification.Reference = ""
-    serialized_example_3_roles_specification.UniqueID = "xyz"
 
     return serialized_example_3_roles_specification.generate_cloudformation_templates()
 

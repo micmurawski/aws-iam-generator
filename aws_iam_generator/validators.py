@@ -50,6 +50,8 @@ class PolicyDocumentStatementValidator(Schema):
 
 class RoleValidator(Schema):
     Tags = fields.Mapping(keys=fields.String, values=fields.String, allow_none=True)
+    Name = fields.String(required=False, allow_none=True, validate=aws_resource_name_validator)
+    Path = fields.String(required=False, allow_none=True, validate=aws_resource_name_validator)
     Trusts = ListOrValueField(fields.String, missing=[])
     ManagedPolicies = ListOrValueField(fields.String, missing=[])
     InAccounts = ListOrValueField(fields.String, missing=[])

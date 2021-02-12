@@ -111,7 +111,11 @@ example_roles_specification = {
     },
     'Roles': {
         'DNSRole': {
-            'Trusts': ['{{Variables.TrustRolesArns.Value}}', 'Accounts.MaintenanceAccount.Id'],
+            'Trusts': [
+                'Variables.TrustRolesArns.Value',
+                'Accounts.MaintenanceAccount.Id',
+                'Roles.DeployAppRole.Arn'
+            ],
             'ManagedPolicies': ['Policies.Route53Policy'],
             'InAccounts': ['Accounts.AppsAccount.Id']
         },
