@@ -5,6 +5,8 @@ During my work as a cloud engineer, I often needed to deploy some IAM resources 
 together with some parameters. I had to do it so often I decided to wrap it all in a feasible and easy to use the library.
 
 Generates AWS IAM Managed Policies and Roles for multiple accounts using the easy templating language. Example cross-account template and deployment execution shown below.
+
+Underneath python code reads JSON template and compiles it into cloudformation templates which next will be deployed. Library serializes and validates input to prevent users from making any mistakes.
 ## Installation
  1. Run ``pip install pynamodb-utils`` or execute ``python setup.py install`` in the source directory
  2. Add ``aws_iam_generator`` to your ``INSTALLED_APPS``
