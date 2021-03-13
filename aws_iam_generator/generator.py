@@ -53,7 +53,6 @@ class AWSIAMGenerator:
             cf_request_body = {
                 "StackName": obj['Name'],
                 "Parameters": (),
-                "DisableRollback": True,
                 "OnFailure": 'DO_NOTHING',
                 "TimeoutInMinutes": 2,
                 "Capabilities": [
