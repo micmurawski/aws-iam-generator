@@ -15,7 +15,8 @@ from .aws import Role as AWSRole
 from .aws import ServiceLinkedRole as AWSServiceLinkedRole
 from .policy import Policy, PolicySerializer
 from .role import Role, RoleSerializer, ServiceLinkedRole, ServiceLinkedRoleSerializer
-from .utils import AWSIAMRoleARNField, aws_resource_name_validator, parse_account_id, patch_dict
+from .utils import (AWSIAMRoleARNField, aws_resource_name_validator, get_default_trust_policy, parse_account_id,
+                    patch_dict)
 from .validators import AWSIAMRolesSpecificationValidator, VariablesTypes, validate_accounts
 
 REF_PATTERN = "(.*)"
@@ -140,7 +141,7 @@ class AWSIAMRolesSpecification:
             raise ValidationError(message=f'Could not find variable with path: {path}') from e
         return value
 
-    def set_parameters(self, Accounts={}, Regions={}, Variables={}):
+    def set_parameters(self, Accounts={}, Regions={}, Variables={}, with_trusts=True):
         accounts_fields_map = {
             k: fields.Nested(
                 AccountIdSerializer(
@@ -188,9 +189,9 @@ class AWSIAMRolesSpecification:
         self.Regions = result['Regions']
         self.Variables = result['Variables']
         self.parse()
-        return self.generate_cloudformation_templates()
+        return self.generate_cloudformation_templates(with_trusts=with_trusts)
 
-    def generate_cloudformation_templates(self):
+    def generate_cloudformation_templates(self, with_trusts=True):
         templates = {k: Template() for k, v in self.Accounts.items()}
         slr_templates = {k: Template() for k, v in self.Accounts.items()}
         templates_names = {}
@@ -209,48 +210,51 @@ class AWSIAMRolesSpecification:
             })
 
         for role_name, role in self.Roles.items():
-            service = []
-            aws = []
-            for i in role.Trusts:
-                if isinstance(i, str) and "amazonaws" in i:
-                    if i not in service:
-                        service.append(i)
-                elif isinstance(i, list):
-                    for j in i:
-                        if isinstance(j, str) and "amazonaws" in i:
-                            if i not in service:
-                                service.append(j)
+            service = set()
+            aws = set()
+            if with_trusts:
+                for i in role.Trusts:
+                    if isinstance(i, str):
+                        if "amazonaws" in i:
+                            service.add(i)
+                        elif re.match("\\d{12}", i):
+                            aws.add(f"arn:aws:iam::{i}:root")
+                        elif re.match("arn:aws:iam::\\d{12}:(root|role/.+)", i):
+                            aws.add(i)
                         else:
-                            if re.match("\\d{12}", j) or j == "*":
-                                aws.append(f"arn:aws:iam::{j}:root")
-                            else:
-                                aws.append(j)
-                else:
-                    if isinstance(i, str) and "amazonaws" in i:
-                        service.append(i)
-                    else:
-                        try:
-                            if re.match("\\d{12}", i) or i == "*":
-                                aws.append(f"arn:aws:iam::{i}:root")
-                            else:
-                                aws.append(i)
-                        except TypeError:
                             raise ValidationError(f'Value {i} does not match AWSAccountId or IAM Role Arn format.')
+                    elif isinstance(i, list):
+                        for j in i:
+                            if isinstance(j, str):
+                                if "amazonaws" in j:
+                                    service.add(j)
+                                elif re.match("\\d{12}", j):
+                                    aws.add(f"arn:aws:iam::{j}:root")
+                                elif re.match("arn:aws:iam::\\d{12}:(root|role/.+)", j):
+                                    aws.add(j)
+                                else:
+                                    raise ValidationError(
+                                        f'Value {i} does not match AWSAccountId or IAM Role Arn format.')
+                    else:
+                        raise ValidationError(f'Value {i} does not match AWSAccountId or IAM Role Arn format.')
 
-            assume_role_policy_document = {
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {}
-                    }
-                ],
-                "Version": "2012-10-17"
-            }
-            if service:
-                assume_role_policy_document["Statement"][0]["Principal"]['Service'] = service
-            if aws:
-                assume_role_policy_document["Statement"][0]["Principal"]['AWS'] = aws
+            assume_role_policy_document = None
+
+            if service or aws:
+                assume_role_policy_document = {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": list(service),
+                                "AWS": list(aws)
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                }
+
             for managed_policy_ref in role.ManagedPolicies:
                 if isinstance(managed_policy_ref, Ref):
                     managed_policy_name = managed_policy_ref.to_dict()['Ref']
@@ -278,14 +282,14 @@ class AWSIAMRolesSpecification:
                 name = role_name
                 templates[account_name].add_resource(AWSRole(
                     role_name,
-                    AssumeRolePolicyDocument=assume_role_policy_document,
+                    AssumeRolePolicyDocument=assume_role_policy_document or get_default_trust_policy(),
                     ManagedPolicyArns=role.ManagedPolicies,
                     RoleName=name
                 ))
                 templates[account_name].add_output([
                     Output(
                         role_name + "Arn",
-                        Description=role.Description or '',
+                        Description=role.Description or " ",
                         Value=GetAtt(role_name, 'Arn'),
                         Export=Export(Sub("${AWS::StackName}-" + role_name + "Arn"))
                     )
@@ -297,13 +301,13 @@ class AWSIAMRolesSpecification:
                 role_name = role_name.replace('_', '')
                 slr_templates[account_name].add_resource(AWSServiceLinkedRole(
                     role_name,
-                    Description=role.Description or '',
+                    Description=role.Description or " ",
                     AWSServiceName=role.ServiceName
                 ))
                 slr_templates[account_name].add_output([
                     Output(
                         role_name + "Ref",
-                        Description=role.Description or '',
+                        Description=role.Description or " ",
                         Value=Ref(role_name),
                         Export=Export(Sub("${AWS::StackName}-" + role_name + "Ref"))
                     )
