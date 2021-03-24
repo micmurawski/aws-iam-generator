@@ -198,3 +198,18 @@ def patch_dict(a: dict, b: dict):
                 a[k1] = {}
             if v2 and k2 not in ("Description", "AccessRoleArn", "Type"):
                 a[k1][k2] = v2
+
+
+def get_default_trust_policy():
+    return {
+        "Statement": [
+            {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:root"}
+                }
+            }
+        ],
+        "Version": "2012-10-17"
+    }
