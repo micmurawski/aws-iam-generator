@@ -17,9 +17,9 @@ setup(
         'tests'
     )),
     install_requires=[
-        "marshmallow==3.3.0",
-        "troposphere==2.6.3 ",
-        "PyYAML==5.3"
+        "marshmallow>=3.3.0,<4.0.0",
+        "troposphere>=2.6.3<3.0.0 ",
+        "PyYAML>=5.3,<6.0.0"
     ],
     author="Michal Murawski",
     author_email="mmurawski777@gmail.com",
